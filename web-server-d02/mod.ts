@@ -1,103 +1,46 @@
-import {serve,ServerRequest} from "https://deno.land/std@0.103.0/http/server.ts";
-import {serveFile} from "https://deno.land/std@0.103.0/http/file_server.ts";
-import {readAll} from "https://deno.land/std@0.103.0/io/util.ts";
 
-const server = serve({port:8080});
-console.log(`http server running , access it at: http://localhost:8080/ `);
-
-async function fileExists(path: string) {
-    try {
-      const stats = await Deno.lstat(path);
-      return stats && stats.isFile;
-    } catch(e) {
-      if (e && e instanceof Deno.errors.NotFound) {
-        return false;
-      } else {
-        throw e;
-      }
-    }
-}
-
-const serveAssets = async (req:ServerRequest,staticPath:string) : Promise<boolean> => {
-    const path = `${Deno.cwd() + staticPath +req.url}`;
-    if (await fileExists(path)) {
-        const content = await serveFile(req, path);
-        req.respond(content);
-        return true
-    }
-    return false
-}
-
-const parseRequset = async (request:ServerRequest) => {
-    let body:Record<string,string> = {};
-    const contextType = request.headers.get("content-type");
-    console.log("req context-type : ",contextType)
-    // const buf = new Buffer();
-    // await Deno.copy(request.body, buf);
-    // const reader = buf
-
-    const reader = request.body
-    if(reader){
-        const raw = await readAll(reader)
-        // const raw = reader.bytes()
-        switch(contextType){
-            case 'application/x-www-form-urlencoded':
-                const bodyParams = new URLSearchParams(new TextDecoder().decode(raw));
-                for(const [k,v] of bodyParams){
-                    body[k]=v
-                }
-                break;
-            case 'application/json':
-            default:
-                body = Object.assign({},body,JSON.parse(new TextDecoder().decode(raw)));
-                break;
-        }
-    }
-    return {
-        body
-    }
-}
-
-const handle = async (req:ServerRequest) => {
-    switch(req.method){
-        case 'POST':
-            // console.log(req)
-            const res = await parseRequset(req)
-            console.log(res)
-            break;
-        case 'GET':
-        default:
-            let pathname = req.url,
-                param = "",
-                index = req.url.indexOf("?");
-            if(index>= 0){
-                pathname = req.url.substr(0,index);
-                param = req.url.substr(index+1);
-            }
-            console.log(req.url.substr(0,req.url.indexOf("?")))
-            const flag = await serveAssets(req,"/assets")
-            if(!flag){
-                switch(pathname){
-                    case "/" :
-                        let body:Record<string,string> = {};
-                        // console.log(new URLSearchParams(param))
-                        const bodyParams = new URLSearchParams(param);
-                        for(const [k,v] of bodyParams){
-                            body[k]=v
-                        }
-                        console.log(body)
-                        req.respond({ body:JSON.stringify(body)});
-                        break;
-                    default:
-                        req.respond({body:"not found"})
-                        break; 
-                }
-            }
-            break;
-    }
-}
+async function handleRequest(request: Request) {
+    const { pathname } = new URL(request.url);
   
-
-for await(const req of server) {
-    handle(req)
-}
+    // This is how the proxy works:
+    // 1. A request comes in for a specific asset.
+    // 2. We construct a URL to that asset.
+    // 3. We fetch the asset and respond to the request.
+  
+    // Check if the request is for style.css.
+    if (pathname.startsWith("/index.html")) {
+      //  Construct a new URL to style.css by using the URL
+      //  of the script (mod.ts) as base (import.meta.url).
+      const style = new URL("index.html", import.meta.url);
+      // Fetch the asset and return the fetched response
+      // to the client.
+      return fetch(style);
+    }
+    if (pathname.startsWith("/assets/index.html")) {
+      //  Construct a new URL to style.css by using the URL
+      //  of the script (mod.ts) as base (import.meta.url).
+      const style = new URL("assets/index.html", import.meta.url);
+      // Fetch the asset and return the fetched response
+      // to the client.
+      return fetch(style);
+    }
+  
+    return new Response(
+      `<html>
+        <head>
+          <link rel="stylesheet" href="style.css" />
+        </head>
+        <body>
+          <h1>Example</h1>
+        </body>
+      </html>`,
+      {
+        headers: {
+          "content-type": "text/html; charset=utf-8",
+        },
+      },
+    );
+  }
+addEventListener("fetch",(e : FetchEvent) => {
+    e.respondWith(handleRequest(e.request))
+})
