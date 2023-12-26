@@ -200,6 +200,8 @@ video.addEventListener('loadeddata', function () {
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         updateFrames(canvas,frames,video_rows,video_cols)
     },1000/25)
+
+    initRandom(300)
 });
 
 function initFrames(rows,cols){
@@ -267,6 +269,8 @@ function initRandom(step){
         if(step > 0) initRandom(step)
     },0)
 }
+
+
 
 window.addEventListener("resize",() => {
     location.reload()
