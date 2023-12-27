@@ -8,15 +8,17 @@
             body {
                 margin:0;
                 background: #363636;
-                color: #fafafa;
+                color: #afafaf;
                 height: 100vh;
             }
         </style>
     </head>
     <body style="display: flex;align-items: center;flex-direction: column;">
-        <div style="margin:24px;height:60px;display: flex;flex-direction: column;align-items: center;">
-            <button onclick="initRandom(100);" >打乱顺序</button>
-            <div id="msg" ></div>
+        <div style="padding:20px 0 8px 0;height:160px;display: flex;flex-direction: column;align-items: center;justify-content: space-between;">
+            <span style="font-size: 18px;font-weight: bold;">女神华容道</span>
+            <span style="font-size: 12px;">by woody 不去便利店的少少</span>
+            <span onclick="initRandom(100);" style="font-size: 12px;padding:3px 6px;border: 1px solid #fafafa;border-radius: 6px;box-shadow: 1px 2px 8px rgb(200 200 200 / 0.1);">打乱顺序</span>
+            <div id="msg" style="height: 25px;font-size: 18px;font-weight: bold;"></div>
         </div>
     </body>
 </html>
@@ -27,7 +29,7 @@ const boardElement = document.createElement('div');
 const video = document.createElement("video");
 video.muted = true;
 video.autoplay = true;
-video.src="./m.mp4"
+video.src= window.innerHeight > window.innerWidth ? "./m.mp4" : "./b.mp4"
 video.controls = true
 video.style.position = 'absolute';
 video.style.top = 0;
@@ -45,14 +47,19 @@ let boardWidth , boardHeight,  // 总的宽度和高度
 let allowClick = true; // 是否允许点击
 
 // 定义游戏板块的初始布局
+// const initialLayout = [
+//     [1, 2, 3],
+//     [4, 5, 6],
+//     [7, 8, 0] // 0代表空格
+// ];
 const initialLayout = [
     [1, 2, 3],
-    [4, 5, 6],
-    [7, 8, 0] // 0代表空格
+    [4, 0, 5],
+    [7, 8, 6] // 0代表空格
 ];
 
 // 创建方块的DOM元素
-const createBlockElement = function (number) {
+const createBlockElement = function () {
     var blockElement = document.createElement('div');
     blockElement.style.width = (blockWidth - 2) + 'px';
     blockElement.style.height = (blockHeight - 2) + 'px';
@@ -90,7 +97,7 @@ const moveBlock = function () {
 
     // 检查是否完成拼图
     if ( checkWin()) {
-        document.getElementById('msg').innerHTML = "<h3>恭喜你，拼图成功！</h3>";
+        document.getElementById('msg').innerHTML = "恭喜你，拼图成功！";
     }else{
         document.getElementById('msg').innerHTML = "";
     }
@@ -200,8 +207,7 @@ video.addEventListener('loadeddata', function () {
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         updateFrames(canvas,frames,video_rows,video_cols)
     },1000/25)
-
-    initRandom(300)
+    
 });
 
 function initFrames(rows,cols){
@@ -235,18 +241,19 @@ function updateFrames(canvas,frames, r, c) {
 // 初始化游戏布局
 const initGameLayout = function (frames) {
     let num = 1
+    let idx = 0 
     for (var row = 0; row < boardSize; row++) {
         for (var col = 0; col < boardSize; col++) {
             var number = initialLayout[row][col];
-            var blockElement = createBlockElement(number);
+            var blockElement = createBlockElement();
             blockElement.style.top = (row * blockHeight) + 'px';
             blockElement.style.left = (col * blockWidth) + 'px';
             blockElement.dataset.row = row.toString();
             blockElement.dataset.col = col.toString();
-            blockElement.dataset.val = num === boardSize**2 ? 0 : num.toString();
+            blockElement.dataset.val = number.toString();
             blockElement.addEventListener('click', moveBlock);
-            if (num !== boardSize**2) {
-                blockElement.appendChild(frames[num-1])
+            if (number != 0) {
+                blockElement.appendChild(frames[number-1])
             }
             boardElement.appendChild(blockElement);
             num++
@@ -269,8 +276,6 @@ function initRandom(step){
         if(step > 0) initRandom(step)
     },0)
 }
-
-
 
 window.addEventListener("resize",() => {
     location.reload()
